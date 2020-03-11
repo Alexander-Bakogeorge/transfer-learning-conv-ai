@@ -133,21 +133,49 @@ def run():
     dataset = get_dataset(tokenizer, args.dataset_path, args.dataset_cache)
     personalities = [dialog["personality"] for dataset in dataset.values() for dialog in dataset]
     personality = random.choice(personalities)
-    logger.info("Selected personality: %s", tokenizer.decode(chain(*personality)))
+    personality2 = random.choice(personalities)
+    #logger.info("Selected personality: %s", tokenizer.decode(chain(*personality)))
+    #logger.info("Selected personality2: %s", tokenizer.decode(chain(*personality2)))
 
+    p1Target = False
+
+    print("Try and guess who has this personality trait: ")
+    if random.choice([True, False]) is True:
+        print(tokenizer.decode(random.choice(personality)))
+        p1Target = True
+    else:
+        print(tokenizer.decode(random.choice(personality2)))
+    
+    print("Type 1 for P1, 2 for P2, and anything else for more text before guessing")
+
+    p1Turn = True
     history = []
     while True:
         raw_text = input(">>> ")
-        while not raw_text:
-            print('Prompt should not be empty!')
-            raw_text = input(">>> ")
-        history.append(tokenizer.encode(raw_text))
+        if raw_text is "1" and p1Target is True or raw_text is "2" and p1Target is False:
+            print("You've guessed correctly!")
+            run()
+        elif raw_text is "1" or raw_text is "2":
+            print("Wrong! new people!")
+            run()
+        #while not raw_text:
+        #    print('Prompt should not be empty!')
+        #    raw_text = input(">>> ")
+        #history.append(tokenizer.encode(raw_text))
         with torch.no_grad():
-            out_ids = sample_sequence(personality, history, tokenizer, model, args)
+            if p1Turn:
+                out_ids = sample_sequence(personality, history, tokenizer, model, args)
+            else:
+                out_ids = sample_sequence(personality2, history, tokenizer, model, args)
         history.append(out_ids)
         history = history[-(2*args.max_history+1):]
         out_text = tokenizer.decode(out_ids, skip_special_tokens=True)
-        print(out_text)
+        if p1Turn:
+            print("P1: " + out_text)
+            p1Turn = False
+        else:
+            print("P2: " + out_text)
+            p1Turn = True
 
 
 if __name__ == "__main__":
